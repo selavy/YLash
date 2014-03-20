@@ -21,6 +21,10 @@
 
 %%
 
+input: /* empty string */
+| input command
+;
+
 command: COMMAND EOL         { printf("no arguments: %s\n", $$); }
 | command_with_argument EOL  { printf("arguments: %s\n", $$); }
 | command_with_argument PIPE command { printf("piped command\n"); }
