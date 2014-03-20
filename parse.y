@@ -23,6 +23,8 @@
 
 command: COMMAND EOL         { printf("no arguments: %s\n", $$); }
 | command_with_argument EOL  { printf("arguments: %s\n", $$); }
+| command_with_argument PIPE command { printf("piped command\n"); }
+| COMMAND PIPE command { printf("piped command\n"); }
 ;
 
 command_with_argument: COMMAND ARGUMENT
