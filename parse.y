@@ -52,8 +52,9 @@ input: /* empty string */
 
 command: EOL
 | COMMAND EOL {
+  current_command = strdup($1);
   char ** args = package_arglist();
-  execute_command($1, args);
+  execute_command(current_command, args);
   clear_arguments();
  }
 | jobs_command
@@ -70,7 +71,6 @@ command: EOL
 ;
 
 other_command: COMMAND {
-  $$ = strdup(yytext);
   current_command = malloc(strlen($1) + 1);
   if(!current_command) {
     fprintf(stderr, "malloc failed\n");
