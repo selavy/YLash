@@ -1,14 +1,21 @@
 %{
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "arglist.h"
 #include "execute_command.h"
 
-  extern char * yytext;
+  struct list {
+    char * arg;
+    size_t arg_sz;
+    struct list * next;
+  };
 
+  extern char * yytext;
   int number_of_arguments;
   struct list * arglist;
+  struct list * tail;
   char * current_command;
 
   void add_argument(char * s);
@@ -95,6 +102,7 @@ main(int argc, char **argv, char **envp) {
    */
   arglist = NULL;
   number_of_arguments = 0;
+  set_environment(envp);
 
   printf("> ");
   /*
@@ -130,10 +138,11 @@ add_argument(char * s) {
   if(!arglist) {
     arg->next = NULL;
     arglist = arg;
+    tail = arg;
 
   } else {
-    arg->next = arglist;
-    arglist = arg;
+    tail->next = arg;
+    tail = arg;
   }
   ++number_of_arguments;
 }
@@ -166,28 +175,30 @@ char **
 package_arglist() {
   char ** packaged;
   if(number_of_arguments == 0) {
-    packaged = malloc(sizeof(*packaged));
+    packaged = malloc(sizeof(*packaged) * 2);
     if(!packaged) {
       fprintf(stderr, "malloc failed\n");
       exit(1);
     }
-    packaged[0] = (char *) NULL;
+    packaged[0] = strdup(current_command);
+    packaged[1] = (char *) NULL;
     return packaged;
   } else {
     int i;
     struct list * arg = arglist;
-    packaged = malloc(sizeof(*packaged) * (number_of_arguments + 1));
+    packaged = malloc(sizeof(*packaged) * (number_of_arguments + 2));
     
+    packaged[0] = strdup(current_command);
     for(i = 0; i < number_of_arguments; ++i) {
-      packaged[i] = malloc(arg->arg_sz);
-      if(!packaged[i]) {
+      packaged[i+1] = malloc(arg->arg_sz);
+      if(!packaged[i+1]) {
 	fprintf(stderr, "malloc failed\n");
 	exit(1);
       }
-      strcpy(packaged[i], arg->arg);
+      strcpy(packaged[i+1], arg->arg);
       arg = arg->next;
     }
-    packaged[i] = (char *) NULL; /* sentinel value */
+    packaged[i+1] = (char *) NULL; /* sentinel value */
     return packaged;
   }
 }

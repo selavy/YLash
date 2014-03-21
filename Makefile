@@ -1,11 +1,11 @@
 CC = gcc
 YACC = yacc
 LEX = lex
-CFLAGS = -Wall -Werror -g
+CFLAGS = -g
 
-OBJS = execute_command.o parse.o
+OBJS = execute_command.o parse.o environment.o
 
-YLash: $(OBJS) arglist.h
+YLash: $(OBJS)
 	$(CC) -o YLash $(CFLAGS) $(OBJS)
 parse.o: parse.c parse.h
 	$(CC) -c parse.c
@@ -15,6 +15,8 @@ parse.h: parse.y
 	$(YACC) -o parse.h parse.y
 execute_command.o: execute_command.h execute_command.c
 	$(CC) $(CFLAGS) -c execute_command.c
+environment.o: environment.h environment.c
+	$(CC) $(CFLAGS) -c environment.c
 .PHONY: clean
 clean:
 	rm -rf YLash *.o parse.h parse.c

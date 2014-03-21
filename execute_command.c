@@ -19,20 +19,22 @@ set_command(char * args) {
 
 int
 execute_command(char * cmd, char ** args) {
-  char ** arg = args;
-  int i = 1;
-  printf("EXECUTING COMMAND\n");
-  printf("command:\t%s\n", cmd);
-  if(*arg) {
-    printf("arguments:\n");
-    while(*arg) {
-      printf("%d:\t%s\n", i++, *arg);
-      ++arg;
+  pid_t pid = fork();
+  if(pid == -1) {
+    perror("fork");
+    return -1;
+  } else if(!pid) {
+    if( -1 == execvpe(cmd, args, get_environment()) ) {
+      fprintf(stderr, "%s: command not recognized\n", cmd);
+      return -1;
     }
+  } else {
+    int status;
+    if(-1 == waitpid( pid, &status, 0 ) ) {
+      fprintf(stderr, "Error calling %s\n", cmd);
+    }
+    return 0;
   }
-
-  free_arglist(args);
-  return 1;
 }
 
 static void
