@@ -1,12 +1,20 @@
-all:
-	yacc -d parse.y
-	lex parse.lex
-	gcc -o YLash y.tab.c lex.yy.c
+CC = gcc
+YACC = yacc
+LEX = lex
+CFLAGS = -Wall -Werror
 
-no_parser: parse.lex
-	lex parse.lex
-	gcc -o YLash -g lex.yy.c
+OBJS = execute_command.o parse.o
 
+YLash: $(OBJS) arglist.h
+	$(CC) -o YLash $(CFLAGS) $(OBJS)
+parse.o: parse.c parse.h
+	$(CC) -c parse.c
+parse.c: parse.lex
+	$(LEX) -o parse.c parse.lex
+parse.h: parse.y
+	$(YACC) -o parse.h parse.y
+execute_command.o: execute_command.h execute_command.c
+	$(CC) $(CFLAGS) -c execute_command.c
 .PHONY: clean
 clean:
-	rm -rf YLash *.tab.* *.yy.c
+	rm -rf YLash *.o parse.h parse.c

@@ -5,7 +5,7 @@
 */
 
 #include <stdlib.h>
-#include "y.tab.h"
+#include "parse.h"
 
 void cleanup_and_exit();
 %}
@@ -40,7 +40,7 @@ cleanup_and_exit(void) {
   exit (0);
 }
 
-void
+int
 yyerror(char * s) {
   fprintf(stderr, "%d: %s at %s\n", yylineno, s, yytext);
   cleanup_and_exit();

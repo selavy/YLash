@@ -2,13 +2,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "arglist.h"
+#include "execute_command.h"
 
   int number_of_arguments = 0;
-  struct list {
-    char * arg;
-    size_t arg_sz;
-    struct list * next;
-  };
 
   struct list * arglist;
 
