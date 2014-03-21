@@ -8,7 +8,6 @@
 
   struct list {
     char * arg;
-    size_t arg_sz;
     struct list * next;
   };
 
@@ -127,13 +126,11 @@ add_argument(char * s) {
     fprintf(stderr, "malloc failed\n");
     exit(1);
   }
-  arg->arg_sz = strlen(s) + 1;
-  arg->arg = malloc(arg->arg_sz);
-  if(!arg->arg) {
+  arg->arg = strdup(s);
+  if(!(arg->arg)) {
     fprintf(stderr,"malloc failed\n");
-    exit(0);
+    exit(1);
   }
-  strcpy(arg->arg, s);
 
   if(!arglist) {
     arg->next = NULL;
@@ -190,12 +187,11 @@ package_arglist() {
     
     packaged[0] = strdup(current_command);
     for(i = 0; i < number_of_arguments; ++i) {
-      packaged[i+1] = malloc(arg->arg_sz);
+      packaged[i+1] = strdup(arg->arg);
       if(!packaged[i+1]) {
 	fprintf(stderr, "malloc failed\n");
 	exit(1);
       }
-      strcpy(packaged[i+1], arg->arg);
       arg = arg->next;
     }
     packaged[i+1] = (char *) NULL; /* sentinel value */
