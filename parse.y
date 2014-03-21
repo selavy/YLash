@@ -4,11 +4,17 @@
 #include <string.h>
 
   int number_of_arguments = 0;
-  struct arglist {
+  struct list {
     char * arg;
     size_t arg_sz;
-    struct arglist * next;
+    struct list * next;
   };
+
+  struct list * arglist;
+
+  void add_argument(char * s);
+  void clear_arguments();
+  void print_arguments();
 %}
 
 %union {
@@ -33,7 +39,7 @@
 %%
 
 input: /* empty string */
-| input command
+| input command { print_arguments(); clear_arguments(); }
 ;
 
 command: EOL
@@ -46,8 +52,8 @@ command: EOL
 | COMMAND PIPE command               { printf("piped command\n"); }
 ;
 
-command_with_argument: COMMAND ARGUMENT { printf("command: %s, argument: %s\n", $1, $2); }
-| command_with_argument ARGUMENT        { printf("argument: %s\n", $2); }
+command_with_argument: COMMAND ARGUMENT { add_argument($2); }
+| command_with_argument ARGUMENT        { add_argument($2); }
 ;
 
 jobs_command: JOBS EOL { printf("execute jobs command\n"); $$ = ""; }
@@ -63,5 +69,67 @@ cd_command: CD ARGUMENT EOL { printf("execute cd command\n"); $$ = ""; }
 
 int
 main(void) {
+  /*
+   * initialize arglist
+   */
+  arglist = NULL;
   yyparse();	
+  
+  /*
+   * get rid of anything that might still be left to not leak memory.
+   */
+  clear_arguments();
+}
+
+/*
+ * add_argument()
+ * s: must be a valid c-string
+ */
+void
+add_argument(char * s) {
+  struct list * arg = malloc(sizeof(*arg));
+  if(!arg) {
+    perror("malloc failed\n");
+    exit(1);
+  }
+  arg->arg_sz = strlen(s) + 1;
+  arg->arg = malloc(arg->arg_sz);
+  if(!arg->arg) {
+    perror("malloc failed\n");
+    exit(1);
+  }
+  strcpy(arg->arg, s);
+
+  if(!arglist) {
+    arg->next = NULL;
+    arglist = arg;
+
+  } else {
+    arg->next = arglist;
+    arglist = arg;
+  }
+  ++number_of_arguments;
+}
+
+void
+clear_arguments() {
+  struct list * arg = arglist;
+  struct list * tmp;
+  while(arg) {
+    tmp = arg->next;
+    free(arg->arg);
+    arg->next = NULL;
+    free(arg);
+    arg = tmp;
+  }
+  arglist = NULL;
+}
+
+void
+print_arguments() {
+  struct list * arg = arglist;
+  while(arg) {
+    printf("%s\n", arg->arg);
+    arg = arg->next;
+  }
 }

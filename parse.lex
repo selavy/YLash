@@ -36,12 +36,14 @@ command [^ \t\n]+
 
 void
 cleanup_and_exit(void) {
-   exit (0);
+  clear_arguments();
+  exit (0);
 }
 
 void
 yyerror(char * s) {
   fprintf(stderr, "%d: %s at %s\n", yylineno, s, yytext);
+  cleanup_and_exit();
 }
 
 
