@@ -18,6 +18,9 @@
 
 %type <string> command
 %type <string> command_with_argument
+%type <string> jobs_command
+%type <string> cd_command
+%type <string> set_command
 
 %%
 
@@ -26,6 +29,9 @@ input: /* empty string */
 ;
 
 command: COMMAND EOL         { printf("no arguments: %s\n", $$); }
+| jobs_command
+| cd_command
+| set_command
 | command_with_argument EOL  { printf("arguments: %s\n", $$); }
 | command_with_argument PIPE command { printf("piped command\n"); }
 | COMMAND PIPE command { printf("piped command\n"); }
@@ -33,6 +39,15 @@ command: COMMAND EOL         { printf("no arguments: %s\n", $$); }
 
 command_with_argument: COMMAND ARGUMENT
 | command_with_argument ARGUMENT
+;
+
+jobs_command: JOBS EOL { printf("execute jobs command\n"); $$ = ""; }
+;
+
+set_command: SET ARGUMENT ARGUMENT EOL { printf("execute set command\n"); $$ = ""; }
+;
+
+cd_command: CD ARGUMENT EOL { printf("execute cd command\n"); $$ = ""; }
 ;
  
 %%

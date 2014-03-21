@@ -20,15 +20,15 @@ command [^ \t\n]+
 %%
 
 {ws}            /*        ignore whitespace                                                                */;
-"jobs"          { printf("matched jobs\n"); BEGIN CMD; return JOBS;                                          }
-"set"           { printf("matched set\n");  BEGIN CMD; return SET;                                           }
-"cd"            { printf("matched cd\n");   BEGIN CMD; return CD;                                            }
+"jobs"          { BEGIN CMD; return JOBS;                                          }
+"set"           { BEGIN CMD; return SET;                                           }
+"cd"            { BEGIN CMD; return CD;                                            }
 {quit}          { cleanup_and_exit();                                                                        }
-"|"             { printf("matched '|'\n");  BEGIN 0; return PIPE;                                            }
-"&"             { printf("matched '&'\n");  BEGIN 0; return BCKGRND_EXEC;                                    }
-<CMD>{argument} { printf("matched argument %s\n", yytext); yylval.string = yytext;          return ARGUMENT; }
-{command}       { printf("matched token: %s\n", yytext); BEGIN CMD; yylval.string = yytext; return COMMAND;  }
-\n              { printf("matched end of line\n"); BEGIN 0; ++yylineno; return EOL;                          }
+"|"             { BEGIN 0; return PIPE;                                            }
+"&"             { BEGIN 0; return BCKGRND_EXEC;                                    }
+<CMD>{argument} { yylval.string = yytext;          return ARGUMENT; }
+{command}       { BEGIN CMD; yylval.string = yytext; return COMMAND;  }
+\n              { BEGIN 0; ++yylineno; return EOL;                          }
 
 %%
 
