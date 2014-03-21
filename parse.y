@@ -28,17 +28,17 @@ input: /* empty string */
 | input command
 ;
 
-command: COMMAND EOL         { printf("no arguments: %s\n", $$); }
+command: COMMAND EOL                 { printf("no arguments: %s\n", $1); }
 | jobs_command
 | cd_command
 | set_command
-| command_with_argument EOL  { printf("arguments: %s\n", $$); }
+| command_with_argument EOL  
 | command_with_argument PIPE command { printf("piped command\n"); }
-| COMMAND PIPE command { printf("piped command\n"); }
+| COMMAND PIPE command               { printf("piped command\n"); }
 ;
 
-command_with_argument: COMMAND ARGUMENT
-| command_with_argument ARGUMENT
+command_with_argument: COMMAND ARGUMENT { printf("argument: %s\n", $2); }
+| command_with_argument ARGUMENT        { printf("argument: %s\n", $2); }
 ;
 
 jobs_command: JOBS EOL { printf("execute jobs command\n"); $$ = ""; }
