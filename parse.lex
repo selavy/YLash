@@ -13,12 +13,14 @@ void cleanup_and_exit();
 %s CMD
 
 ws [ \t]+
+comment #.*\n
 quit ("quit"|"exit")
 argument [^ \t\n]+
 command [^ \t\n]+
 
 %%
 
+{comment}       { return EOL;                                                      }
 {ws}            /*        ignore whitespace                                                                */;
 "jobs"          { BEGIN CMD; return JOBS;                                          }
 "set"           { BEGIN CMD; return SET;                                           }

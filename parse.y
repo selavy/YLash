@@ -46,7 +46,7 @@ command: EOL
 | COMMAND PIPE command               { printf("piped command\n"); }
 ;
 
-command_with_argument: COMMAND ARGUMENT { printf("argument: %s\n", $2); }
+command_with_argument: COMMAND ARGUMENT { printf("command: %s, argument: %s\n", $1, $2); }
 | command_with_argument ARGUMENT        { printf("argument: %s\n", $2); }
 ;
 
