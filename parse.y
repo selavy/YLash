@@ -86,10 +86,10 @@ command_with_argument: other_command ARGUMENT { add_argument($2); }
 jobs_command: JOBS EOL { jobs_command(); }
 ;
 
-set_command: SET ARGUMENT ARGUMENT EOL { set_command(); }
+set_command: SET ARGUMENT ARGUMENT EOL { set_command($2, $3); }
 ;
 
-cd_command: CD ARGUMENT EOL { cd_command(); }
+cd_command: CD ARGUMENT EOL { cd_command($2); }
 ;
  
 %%

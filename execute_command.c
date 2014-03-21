@@ -9,11 +9,15 @@ jobs_command() {
 
 int
 cd_command(char * arg) {
+  if(-1 == chdir(arg)) {
+    fprintf(stderr, "unable to change to: %s\n", arg);
+  }
   return 1;
 }
 
 int
-set_command(char * args) {
+set_command(char * var, char * val) {
+  setenv(var, val, 1);
   return 1;
 }
 

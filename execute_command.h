@@ -12,7 +12,7 @@ extern char ** environ;
 
 int jobs_command();
 int cd_command();
-int set_command();
+int set_command(char * var, char * val);
 int execute_command(char * cmd, char ** args);
 
 #endif
