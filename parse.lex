@@ -5,12 +5,13 @@
 */
 
 #include <stdlib.h>
+#include <string.h>
 #include "parse.h"
 
 void cleanup_and_exit();
 %}
 
-%s CMD
+%s ARGS
 
 ws [ \t]+
 comment #.*\n
@@ -20,17 +21,17 @@ command [^ \t\n]+
 
 %%
 
-{comment}       { return EOL;                                                      }
-{ws}            /*        ignore whitespace                                                                */;
-"jobs"          { BEGIN CMD; return JOBS;                                          }
-"set"           { BEGIN CMD; return SET;                                           }
-"cd"            { BEGIN CMD; return CD;                                            }
-{quit}          { cleanup_and_exit();                                                                        }
-"|"             { BEGIN 0; return PIPE;                                            }
-"&"             { BEGIN 0; return BCKGRND_EXEC;                                    }
-<CMD>{argument} { yylval.string = yytext;          return ARGUMENT; }
-{command}       { BEGIN CMD; yylval.string = yytext; return COMMAND;  }
-\n              { BEGIN 0; ++yylineno; return EOL;                          }
+{comment}        { return EOL;                                                 }
+{ws}             /*        ignore whitespace                                 */;
+"jobs"           { BEGIN ARGS; return JOBS;                                    }
+"set"            { BEGIN ARGS; return SET;                                     }
+"cd"             { BEGIN ARGS; return CD;                                      }
+{quit}           { cleanup_and_exit();                                         }
+"|"              { BEGIN 0; return PIPE;                                       }
+"&"              { BEGIN 0; return BCKGRND_EXEC;                               }
+<ARGS>{argument} { yylval.string = strdup(yytext); return ARGUMENT;            }
+{command}        { BEGIN ARGS; yylval.string = strdup(yytext); return COMMAND; }
+\n               { BEGIN 0; ++yylineno; return EOL;                            }
 
 %%
 

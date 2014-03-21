@@ -5,13 +5,16 @@
 #include "arglist.h"
 #include "execute_command.h"
 
-  int number_of_arguments = 0;
+  extern char * yytext;
 
+  int number_of_arguments;
   struct list * arglist;
+  char * current_command;
 
   void add_argument(char * s);
   void clear_arguments();
   void print_arguments();
+  char** package_arglist();
 %}
 
 %union {
@@ -32,44 +35,71 @@
 %type <string> jobs_command
 %type <string> cd_command
 %type <string> set_command
+%type <string> other_command
 
 %%
 
 input: /* empty string */
-| input command { print_arguments(); clear_arguments(); }
+| input command { clear_arguments(); printf("> "); }
 ;
 
 command: EOL
-| COMMAND EOL                 { printf("no arguments: %s\n", $1); }
+| COMMAND EOL {
+  char ** args = package_arglist();
+  execute_command($1, args);
+  clear_arguments();
+ }
 | jobs_command
 | cd_command
 | set_command
-| command_with_argument EOL  
-| command_with_argument PIPE command { printf("piped command\n"); }
-| COMMAND PIPE command               { printf("piped command\n"); }
+| command_with_argument EOL   {
+  char ** args = package_arglist();
+  execute_command(current_command, args);
+  clear_arguments();
+  free(current_command);
+  }
+| command_with_argument PIPE command 
+| COMMAND PIPE command 
 ;
 
-command_with_argument: COMMAND ARGUMENT { add_argument($2); }
-| command_with_argument ARGUMENT        { add_argument($2); }
+other_command: COMMAND {
+  $$ = strdup(yytext);
+  current_command = malloc(strlen($1) + 1);
+  if(!current_command) {
+    fprintf(stderr, "malloc failed\n");
+    exit(1);
+  }
+  strcpy(current_command, $1);
+ }
 ;
 
-jobs_command: JOBS EOL { printf("execute jobs command\n"); $$ = ""; }
+command_with_argument: other_command ARGUMENT { add_argument($2); }
+| command_with_argument ARGUMENT              { add_argument($2); }
 ;
 
-set_command: SET ARGUMENT ARGUMENT EOL { printf("execute set command\n"); $$ = ""; }
+jobs_command: JOBS EOL { jobs_command(); }
 ;
 
-cd_command: CD ARGUMENT EOL { printf("execute cd command\n"); $$ = ""; }
+set_command: SET ARGUMENT ARGUMENT EOL { set_command(); }
+;
+
+cd_command: CD ARGUMENT EOL { cd_command(); }
 ;
  
 %%
 
 int
-main(void) {
+main(int argc, char **argv, char **envp) {
   /*
    * initialize arglist
    */
   arglist = NULL;
+  number_of_arguments = 0;
+
+  printf("> ");
+  /*
+   * call the parser
+   */
   yyparse();	
   
   /*
@@ -86,14 +116,14 @@ void
 add_argument(char * s) {
   struct list * arg = malloc(sizeof(*arg));
   if(!arg) {
-    perror("malloc failed\n");
+    fprintf(stderr, "malloc failed\n");
     exit(1);
   }
   arg->arg_sz = strlen(s) + 1;
   arg->arg = malloc(arg->arg_sz);
   if(!arg->arg) {
-    perror("malloc failed\n");
-    exit(1);
+    fprintf(stderr,"malloc failed\n");
+    exit(0);
   }
   strcpy(arg->arg, s);
 
@@ -120,6 +150,7 @@ clear_arguments() {
     arg = tmp;
   }
   arglist = NULL;
+  number_of_arguments = 0;
 }
 
 void
@@ -128,5 +159,35 @@ print_arguments() {
   while(arg) {
     printf("%s\n", arg->arg);
     arg = arg->next;
+  }
+}
+
+char **
+package_arglist() {
+  char ** packaged;
+  if(number_of_arguments == 0) {
+    packaged = malloc(sizeof(*packaged));
+    if(!packaged) {
+      fprintf(stderr, "malloc failed\n");
+      exit(1);
+    }
+    packaged[0] = (char *) NULL;
+    return packaged;
+  } else {
+    int i;
+    struct list * arg = arglist;
+    packaged = malloc(sizeof(*packaged) * (number_of_arguments + 1));
+    
+    for(i = 0; i < number_of_arguments; ++i) {
+      packaged[i] = malloc(arg->arg_sz);
+      if(!packaged[i]) {
+	fprintf(stderr, "malloc failed\n");
+	exit(1);
+      }
+      strcpy(packaged[i], arg->arg);
+      arg = arg->next;
+    }
+    packaged[i] = (char *) NULL; /* sentinel value */
+    return packaged;
   }
 }

@@ -1,7 +1,7 @@
 CC = gcc
 YACC = yacc
 LEX = lex
-CFLAGS = -Wall -Werror
+CFLAGS = -Wall -Werror -g
 
 OBJS = execute_command.o parse.o
 
