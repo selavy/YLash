@@ -1,6 +1,14 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+  int number_of_arguments = 0;
+  struct arglist {
+    char * arg;
+    size_t arg_sz;
+    struct arglist * next;
+  };
 %}
 
 %union {
@@ -28,7 +36,8 @@ input: /* empty string */
 | input command
 ;
 
-command: COMMAND EOL                 { printf("no arguments: %s\n", $1); }
+command: EOL
+| COMMAND EOL                 { printf("no arguments: %s\n", $1); }
 | jobs_command
 | cd_command
 | set_command
