@@ -12,7 +12,7 @@
   int number_of_arguments;
   struct list * arglist;
   struct list * tail;
-  char * current_command;
+  char * current_command = NULL;
 
   void add_argument(char * s);
   void clear_arguments();
@@ -42,6 +42,11 @@
 
 %%
 
+ /*
+  * Top level: matches either a command or a blank line
+  * if blank line, just print the prompt again
+  * if command then execute command and print prompt
+  */
 input: /* empty string */
 | input command {
   
@@ -55,6 +60,8 @@ input: /* empty string */
    * if the arguments have already been cleared
    */
   clear_arguments();
+
+  if(current_command) free(current_command);
 
   /*
    * print the prompt again
