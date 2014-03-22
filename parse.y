@@ -1,9 +1,6 @@
 %{
-#define _GNU_SOURCE
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "general.h"
 #include "execute_command.h"
 
   struct list {
@@ -46,26 +43,55 @@
 %%
 
 input: /* empty string */
-| input command { clear_arguments(); printf("> "); }
+| input command {
+  
+  /*
+   * Check if any of the background processes have finished
+   */
+  check_background_processes();
+
+  /*
+   * probably unnecessary, but it won't hurt anything
+   * if the arguments have already been cleared
+   */
+  clear_arguments();
+
+  /*
+   * print the prompt again
+   */
+  printf("quash$> ");
+ }
 ;
 
 command: EOL
 | COMMAND EOL {
+  char ** args;
   current_command = strdup($1);
-  char ** args = package_arglist();
-  execute_command(current_command, args);
+  args = package_arglist();
+  execute_command(current_command, args, 0);
+  clear_arguments();
+ }
+| COMMAND BCKGRND_EXEC EOL {
+  char ** args;
+  current_command = strdup($1);
+  args = package_arglist();
+  execute_command(current_command, args, 1);
   clear_arguments();
  }
 | jobs_command
 | cd_command
 | set_command
-| command_with_argument EOL   {
+| command_with_argument EOL {
   char ** args = package_arglist();
-  execute_command(current_command, args);
+  execute_command(current_command, args, 0);
   clear_arguments();
-  free(current_command);
   }
-| command_with_argument PIPE command 
+| command_with_argument BCKGRND_EXEC EOL {
+  char ** args = package_arglist();
+  execute_command(current_command, args, 1);
+  clear_arguments();
+ }
+| command_with_argument PIPE command
 | COMMAND PIPE command 
 ;
 
@@ -103,7 +129,7 @@ main(int argc, char **argv, char **envp) {
   number_of_arguments = 0;
   set_environment(envp);
 
-  printf("> ");
+  printf("quash$> ");
   /*
    * call the parser
    */
