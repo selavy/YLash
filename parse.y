@@ -39,15 +39,29 @@
 %type <string> cd_command
 %type <string> set_command
 %type <string> other_command
+%type <string> qerror
+%type <string> pipe_error
 
 %%
 
+ /********************************************************************************/
  /*
   * Top level: matches either a command or a blank line
   * if blank line, just print the prompt again
   * if command then execute command and print prompt
   */
 input: /* empty string */
+| input EOL {
+  printf("quash$> ");
+ }
+| input qerror {
+  clear_arguments();
+  if(current_command) {
+    free(current_command);
+    current_command = NULL;
+  }
+  printf("quash$> ");
+ }
 | input command {
   
   /*
@@ -61,17 +75,21 @@ input: /* empty string */
    */
   clear_arguments();
 
-  if(current_command) free(current_command);
+  if(current_command) {
+    free(current_command);
+    current_command = NULL;
+  }
 
   /*
    * print the prompt again
    */
   printf("quash$> ");
  }
+| error { yyerrok; printf("quash: syntax error"); yyclearin; }
 ;
-
-command: EOL
-| COMMAND EOL {
+ 
+ /**********************************************************************************/
+command: COMMAND EOL {
   char ** args;
   current_command = strdup($1);
   args = package_arglist();
@@ -102,6 +120,7 @@ command: EOL
 | COMMAND PIPE command 
 ;
 
+ /**********************************************************************************/
 other_command: COMMAND {
   current_command = malloc(strlen($1) + 1);
   if(!current_command) {
@@ -112,16 +131,30 @@ other_command: COMMAND {
  }
 ;
 
+ /**********************************************************************************/
+qerror: pipe_error
+;
+
+ /**********************************************************************************/
+pipe_error: COMMAND PIPE EOL     { printf("Usage: [command] | [command]\n"); }
+| command_with_argument PIPE EOL { printf("Usage: [command] | [command]\n"); }
+| COMMAND BCKGRND_EXEC PIPE EOL  { printf("quash: syntax error near unexpected token '|'\n"); }
+;
+
+ /**********************************************************************************/
 command_with_argument: other_command ARGUMENT { add_argument($2); }
 | command_with_argument ARGUMENT              { add_argument($2); }
 ;
 
+ /**********************************************************************************/
 jobs_command: JOBS EOL { jobs_command(); }
 ;
 
+ /**********************************************************************************/
 set_command: SET ARGUMENT ARGUMENT EOL { set_command($2, $3); }
 ;
 
+ /**********************************************************************************/
 cd_command: CD ARGUMENT EOL { cd_command($2); }
 ;
  
