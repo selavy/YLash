@@ -102,14 +102,10 @@ command: COMMAND EOL {
 | cd_command
 | set_command
 | command_with_argument EOL {
-  char ** args = package_arglist();
-  execute_command(current_command, args, 0);
-  clear_arguments();
+  exec_cmd (create_command (FOREGROUND_EXEC));
   }
 | command_with_argument BCKGRND_EXEC EOL {
-  char ** args = package_arglist();
-  execute_command(current_command, args, 1);
-  clear_arguments();
+  exec_cmd (create_command (BACKGROUND_EXEC));
  }
 | command_with_argument PIPE command { printf("single pipe\n"); }
 | COMMAND PIPE command { printf("multiple pipes\n"); } 
