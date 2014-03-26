@@ -116,18 +116,13 @@ command: COMMAND EOL {
   execute_command(current_command, args, 1);
   clear_arguments();
  }
-| command_with_argument PIPE command
-| COMMAND PIPE command 
+| command_with_argument PIPE command { printf("single pipe\n"); }
+| COMMAND PIPE command { printf("multiple pipes\n"); } 
 ;
 
  /**********************************************************************************/
 other_command: COMMAND {
-  current_command = malloc(strlen($1) + 1);
-  if(!current_command) {
-    fprintf(stderr, "malloc failed\n");
-    exit(1);
-  }
-  strcpy(current_command, $1);
+  current_command = strdup($1);
  }
 ;
 
