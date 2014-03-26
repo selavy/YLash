@@ -119,6 +119,128 @@ execute_command(char * cmd, char ** args, int in_background) {
   }
 }
 
+int connect_commands (struct command * from, struct command * to) {
+  int pipe_fd[2];
+
+  /*
+   * Sanity Check
+   * TODO: Change to assert()
+   */
+  if ((from == NULL) || (to == NULL)) {
+    fprintf (stderr, "Tried to connect with a NULL command\n");
+    return -1;
+  }
+
+  if (pipe(pipe_fd) == -1) {
+    perror ("pipe");
+    return -1;
+  }
+
+  /*
+   * For the from side, set the SEND pipe flag and
+   * copy the write pipe fd.
+   *
+   * For the to side, set the RECV pipe flag and
+   * copy the read pipe fd.
+   */
+  from->flags |= SEND;
+  from->pipe_fd[1] = pipe_fd[1];
+  to->flags |= RECV;
+  to->pipe_fd[0] = pipe_fd[0];
+
+  return 1;
+}
+
+int exec_cmd (struct command * cmd) {
+  pid_t pid;
+  
+  /*
+   * Sanity check
+   */
+  if (cmd == NULL) return -1;
+  
+  /*
+   * Fork so we can call execvpe()
+   */
+  pid = fork();
+  if (-1 == pid) {
+    perror ("fork");
+    return -1;
+  } else if (!pid) {
+
+    /*
+     * Child process
+     */
+    
+    /*
+     * First, check if a pipe has been setup.
+     * If there has been a pipe setup, check
+     * whether need to dup2() input or output.
+     */
+
+    if ((cmd->flags & PIPE_UNUSED) == 0) {
+      if ((cmd->flags & RECV) != 0) {
+	dup2 (cmd->pipe_fd[0], STDIN_FILENO);
+      } else {
+	if (cmd->pipe_fd[0] != 0)
+	  close (cmd->pipe_fd[0]);
+      }
+
+      if ((cmd->flags & SEND) != 0) {
+	dup2 (cmd->pipe_fd[1], STDOUT_FILENO);
+      } else {
+	if (cmd->pipe_fd[1] != 0)
+	  close (cmd->pipe_fd[0]);
+      }
+    }
+
+    /*
+     * Now call execvpe
+     */
+    if (-1 == execvpe (cmd->command, cmd->arguments, get_environment())) {
+      fprintf (stderr, "%s: command not recognized\n", cmd->command);
+      return -1;
+    }
+  } else {
+    /*
+     * Parent Process
+     */
+
+    /*
+     * If there was a pipe, then we need to close it
+     * here in the parent.
+     */
+    if ((cmd->flags & PIPE_UNUSED) == 0) {
+      if ((cmd->flags & RECV) != 0) {
+	close (cmd->pipe_fd[0]);
+      }
+      if ((cmd->flags & SEND) != 0) {
+	close (cmd->pipe_fd[1]);
+      }
+    }
+
+    if ((cmd->flags & BACKGROUND_EXEC) != 0) {
+      /*
+       * Process supposed to execute in background
+       * so add it to the jobs list.
+       */
+      
+      /*
+       * TODO: change add_job to accept command struct
+       */
+      add_job( pid, cmd->command );
+    } else {
+      int status;
+      if (waitpid (pid, &status, 0) == -1) {
+	fprintf (stderr, "Unable to execute: %s\n", cmd->command);
+	return -1;
+      }
+    }
+  }
+
+  return 0;
+}
+
 static void
 free_arglist(char ** arglist) {
   char ** arg = arglist;

@@ -14,10 +14,11 @@
   struct list * tail;
   char * current_command = NULL;
 
-  void add_argument(char * s);
-  void clear_arguments();
-  void print_arguments();
-  char** package_arglist();
+  struct command * create_command (int flags);
+  void add_argument (char * s);
+  void clear_arguments ();
+  void print_arguments ();
+  char** package_arglist ();
 %}
 
 %union {
@@ -90,18 +91,12 @@ input: /* empty string */
  
  /**********************************************************************************/
 command: COMMAND EOL {
-  char ** args;
-  current_command = strdup($1);
-  args = package_arglist();
-  execute_command(current_command, args, 0);
-  clear_arguments();
+  current_command = strdup ($1);
+  exec_cmd (create_command (FOREGROUND_EXEC));
  }
 | COMMAND BCKGRND_EXEC EOL {
-  char ** args;
   current_command = strdup($1);
-  args = package_arglist();
-  execute_command(current_command, args, 1);
-  clear_arguments();
+  exec_cmd (create_command (BACKGROUND_EXEC));
  }
 | jobs_command
 | cd_command
@@ -174,6 +169,23 @@ main(int argc, char **argv, char **envp) {
    * get rid of anything that might still be left to not leak memory.
    */
   clear_arguments();
+}
+
+
+struct command * create_command (int flags) {
+  struct command * new_command = malloc (sizeof (*new_command));
+  if (!new_command) {
+    perror ("malloc");
+    return NULL;
+  }
+
+  new_command->command = strdup (current_command);
+  new_command->arguments = package_arglist();
+  clear_arguments();
+  new_command->pipe_fd[0] = 0;
+  new_command->pipe_fd[1] = 0;
+  new_command->flags = flags;
+  return new_command;
 }
 
 /*
