@@ -137,12 +137,16 @@ int connect_commands (struct command * from, struct command * to) {
   }
 
   /*
+   * Unset the PIPE_UNUSED flag for both sides
+   *
    * For the from side, set the SEND pipe flag and
    * copy the write pipe fd.
    *
    * For the to side, set the RECV pipe flag and
    * copy the read pipe fd.
    */
+  from->flags &= !(PIPE_UNUSED);
+  to->flags &= !(PIPE_UNUSED);
   from->flags |= SEND;
   from->pipe_fd[1] = pipe_fd[1];
   to->flags |= RECV;

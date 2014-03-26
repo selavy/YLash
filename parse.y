@@ -19,6 +19,8 @@
   void clear_arguments ();
   void print_arguments ();
   char** package_arglist ();
+  struct command * from_command;
+  struct command * to_command;
 %}
 
 %union {
@@ -89,6 +91,11 @@ input: /* empty string */
 | error { yyerrok; printf("quash: syntax error"); yyclearin; }
 ;
  
+command_with_pipe: command_with_argument PIPE {
+  from_command = create_command (FOREGROUND_EXEC);
+ }
+;
+
  /**********************************************************************************/
 command: COMMAND EOL {
   current_command = strdup ($1);
@@ -97,6 +104,12 @@ command: COMMAND EOL {
 | COMMAND BCKGRND_EXEC EOL {
   current_command = strdup($1);
   exec_cmd (create_command (BACKGROUND_EXEC));
+ }
+| command_with_pipe command_with_argument EOL {
+  to_command = create_command (FOREGROUND_EXEC);
+  connect_commands (from_command, to_command);
+  exec_cmd (from_command);
+  exec_cmd (to_command);
  }
 | jobs_command
 | cd_command
@@ -107,8 +120,8 @@ command: COMMAND EOL {
 | command_with_argument BCKGRND_EXEC EOL {
   exec_cmd (create_command (BACKGROUND_EXEC));
  }
-| command_with_argument PIPE command { printf("single pipe\n"); }
-| COMMAND PIPE command { printf("multiple pipes\n"); } 
+ /* | command_with_argument PIPE command { printf("single pipe\n"); } */
+ /* | COMMAND PIPE command { printf("multiple pipes\n"); }  */
 ;
 
  /**********************************************************************************/
@@ -123,7 +136,7 @@ qerror: pipe_error
 
  /**********************************************************************************/
 pipe_error: COMMAND PIPE EOL     { printf("Usage: [command] | [command]\n"); }
-| command_with_argument PIPE EOL { printf("Usage: [command] | [command]\n"); }
+| command_with_pipe EOL { printf("Usage: [command] | [command]\n"); }
 | COMMAND BCKGRND_EXEC PIPE EOL  { printf("quash: syntax error near unexpected token '|'\n"); }
 ;
 
@@ -176,11 +189,15 @@ struct command * create_command (int flags) {
   }
 
   new_command->command = strdup (current_command);
+  /*
+   * free (current_command);
+   * current_command = NULL;
+   */
   new_command->arguments = package_arglist();
   clear_arguments();
   new_command->pipe_fd[0] = 0;
   new_command->pipe_fd[1] = 0;
-  new_command->flags = flags;
+  new_command->flags = flags | PIPE_UNUSED;
   return new_command;
 }
 
